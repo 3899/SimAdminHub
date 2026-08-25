@@ -104,7 +104,7 @@ curl -fsS http://127.0.0.1:3001/health
 http://HUB主机IP:3001
 ```
 
-当前版本没有 Web 登录密码。不要把 `3001` 直接暴露到公网；远程访问应使用带身份认证和 TLS 的反向代理、VPN 或其他可信网络方案。
+管理员密码默认关闭以兼容已有安装。首次部署后进入“系统设置 > 安全”，先设置管理员密码，再启用密码保护并按需要调整会话有效期和空闲超时。不要把 `3001` 直接暴露到公网；远程访问应使用 TLS 反向代理、VPN 或其他可信网络方案。
 
 上线前还应完成[安全部署](security.md)中的检查。
 
@@ -339,7 +339,19 @@ location / {
 }
 ```
 
-实际部署还必须增加身份认证、TLS 和来源限制。页面与 `/api` 使用人工认证；设备 `/agent` 路径保留 Agent Bearer 认证并单独限制网络来源，不能跳转到网页登录。不要在代理日志中记录 `Authorization` 请求头。
+反向代理必须传递正确的 `X-Forwarded-Proto`，HTTPS 请求下 Hub 才会为登录 Cookie 增加 `Secure` 属性。页面与 `/api` 使用 Hub 单管理员会话；设备 `/agent` 路径保留 Agent Bearer 认证并单独限制网络来源，不能跳转到网页登录。实际部署仍需 TLS 和来源限制，不要在代理日志中记录 `Authorization` 请求头。
+
+忘记管理员密码时，可登录 Hub 宿主机执行：
+
+```bash
+sudo simadminhub --database /var/lib/simadminhub/simadminhub.db auth reset-password
+```
+
+如需清除管理员密码并重新进入首次设置状态，执行：
+
+```bash
+sudo simadminhub --database /var/lib/simadminhub/simadminhub.db auth clear
+```
 
 ## 异机灾备恢复
 
