@@ -76,6 +76,9 @@ if command -v systemctl >/dev/null 2>&1; then
     simadmin-host-agent-control.path \
     simadmin-host-agent-control.service \
     simadmin-host-agent.service \
+    simadmin-device-service.service \
+    simadminhub-update.path \
+    simadminhub-update.service \
     simadminhub.service
   do
     systemctl disable --now "$service" >/dev/null 2>&1 || true
@@ -94,10 +97,18 @@ rm -f \
   /etc/systemd/system/simadmin-host-agent.service \
   /etc/systemd/system/simadmin-host-agent-control.service \
   /etc/systemd/system/simadmin-host-agent-control.path \
+  /etc/systemd/system/simadmin-device-service.service \
+  /etc/systemd/system/simadminhub-update.service \
+  /etc/systemd/system/simadminhub-update.path \
   /usr/local/bin/simadminhub \
   /usr/local/bin/simadmin-host-agent \
-  /usr/local/libexec/simadminhub-host-agent-control
+  /usr/local/bin/simadmin-device-service \
+  /usr/local/libexec/simadminhub-host-agent-control \
+  /usr/local/libexec/simadminhub-install-lpac \
+  /usr/local/libexec/simadminhub-update-helper \
+  /usr/local/lib/simadminhub/detect-local-cellular-device
 rm -rf /opt/simadminhub
+rm -rf /var/lib/simadminhub/updates
 
 if command -v systemctl >/dev/null 2>&1; then
   systemctl daemon-reload

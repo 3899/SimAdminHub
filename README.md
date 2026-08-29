@@ -45,15 +45,16 @@ SimAdmin 负责单台设备的独立运行与实际硬件控制；SimAdminHub �
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 总览         | 集中查看设备在线数量、Agent 连接、蜂窝可用性、运营商、网络制式、信号、温度、运行时长、接入方式和分层链路状态。                                                                |
 | 设备管理     | 支持局域网发现、设备地址接入、设备端主动连接、自动或人工授权、分组、标签、编辑、删除解绑和身份冲突确认。                                                                      |
-| 完整设备面板 | 网络设备直接渲染 SimAdmin 的状态、SIM、eSIM、蜂窝网络、设备网络、备份恢复、设备设置和设备本地 OTA 页面。                                                                      |
+| 完整设备面板 | 网络 SimAdmin 与直连 SimAdmin 保留状态、SIM、eSIM、WiFi Calling、蜂窝网络、设备网络、备份恢复、设备设置和设备本地 OTA；Hub 本机设备隐藏设备级备份与 OTA。                 |
 | 短信中心     | 首次接入全量同步设备历史短信，后续增量同步；支持按设备和会话查看、跨设备搜索、发送短信、会话选择和批量删除。                                                                  |
 | 通知中心     | 集中配置 Webhook、Bark、PushPlus、企业微信、钉钉、飞书、Telegram、Email、Server酱等通道，以及转发规则、设备范围、日志和失败重试。                                             |
 | 自动化中心   | 按全部设备、多个分组或指定设备执行重启基带、重启设备和发送短信任务，并记录每台设备的执行结果。                                                                                |
-| Host Agent   | 在 Linux 宿主机管理不能安装 SimAdmin 的 USB/PCIe 蜂窝模组；添加设备时按需枚举`/dev/serial/by-id`、ModemManager、Direct AT、QMI、MBIM 和网络端点，关闭窗口后停止新设备扫描。 |
+| 本机设备     | Hub 安装在完整 Linux 蜂窝设备上时，自动启动仅监听回环地址的 Device Service，以 `local_system + simadmin_agent` 提供蜂窝设备能力；普通服务器上不启动该进程。                       |
+| Host Agent   | 发现已安装 SimAdmin 的 USB 完整设备时交由设备内 Agent 接管；其他完整设备或普通模组按实际探测开放 Direct AT、ModemManager、QMI、MBIM、SIM、短信、数据、eSIM 识别与 Profile 生命周期、绑定网卡等能力。 |
 | 数据管理     | 提供组件存储统计、手动清理、自动保留策略、数据库整理、组件化备份、定时备份、预览和恢复。                                                                                      |
-| 运行与发布   | 支持心跳和离线判定、Agent WebSocket 重连、命令账本、失败恢复、版本检查、systemd 安装和 Docker 部署。                                                                          |
+| 运行与发布   | 支持心跳和离线判定、Agent WebSocket 重连、命令账本、失败恢复、systemd 在线更新与回滚，以及 Docker 部署。                                                                      |
 
-当前版本为单管理员控制台，支持可选的管理员密码、会话有效期和空闲自动退出，不提供多用户、角色或租户。顶层集中 OTA 和日志中心尚未开放；SimAdmin 子设备完整面板仍保留设备本地 OTA。
+当前版本为单管理员控制台，支持可选的管理员密码、会话有效期和空闲自动退出，不提供多用户、角色或租户。顶层集中 OTA 和日志中心尚未开放；仅网络 SimAdmin 与直连 SimAdmin 的完整面板保留设备本地 OTA。
 
 ## 文档
 
@@ -101,7 +102,7 @@ SimAdmin 负责单台设备的独立运行与实际硬件控制；SimAdminHub �
 curl -fsSL https://raw.githubusercontent.com/3899/SimAdminHub/main/install.sh | sh
 ```
 
-默认安装 Hub 与独立 Host Agent 服务，但 Host Agent 初始关闭且不会启动进程。需要管理本机直连模组时，再在“系统设置 > 概览”中启用。
+默认安装 Hub、独立 Host Agent 和本机 Device Service。Host Agent 初始关闭且不会启动进程；Device Service 只在检测到本机平台蜂窝硬件时启动。需要管理额外直连模组时，再在“系统设置 > 概览”中启用 Host Agent。
 
 国内网络可使用加速入口：
 
@@ -124,7 +125,7 @@ docker run -d --name simadminhub --restart unless-stopped \
   ghcr.io/3899/simadminhub:latest
 ```
 
-镜像同时包含 Hub 和独立 Host Agent。Host Agent 默认不启动，需要管理 Docker 宿主机直连模组时可在“系统设置 > 概览”中一键启用。标准 Docker 安装使用 Linux host 网络，使容器可以接收局域网 mDNS 组播并自动发现设备；Hub 直接使用宿主机的 `3001` 端口。安全边界、Compose 和升级说明见[安装与部署](docs/public/install.md)。
+镜像同时包含 Hub、独立 Host Agent 和本机 Device Service。Host Agent 默认不启动，需要管理 Docker 宿主机直连模组时可在“系统设置 > 概览”中一键启用；Device Service 仅在容器能够识别本机平台蜂窝硬件时运行。标准 Docker 安装使用 Linux host 网络，使容器可以接收局域网 mDNS 组播并自动发现设备；Hub 直接使用宿主机的 `3001` 端口。安全边界、Compose 和升级说明见[安装与部署](docs/public/install.md)。
 
 安装后访问：
 

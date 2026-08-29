@@ -8,7 +8,7 @@
 
 Hub 可以部署在独立 Linux 服务器、软路由、NAS、虚拟机，或其中一台 SimAdmin 设备所在的 Linux 主机。主机需要持续运行，并能与被管理设备互通。
 
-Hub 与 SimAdmin 可以位于同一台主机，但必须作为独立服务运行：SimAdmin 默认使用 `3000`，Hub 默认使用 `3001`，两者不能共用数据目录。
+Hub 可以直接安装在 UFI003 等完整 Linux 蜂窝设备本机。发布包内置独立 Device Service，检测到本机平台蜂窝硬件后自动通过回环地址接入 Hub，并提供完整 SimAdmin 能力；普通服务器上该服务保持沉寂。若同机仍单独运行完整 SimAdmin Web 服务，SimAdmin 使用 `3000`、Hub 使用 `3001`，二者不能共用数据目录。
 
 ### 支持架构与发布包
 
@@ -73,6 +73,8 @@ https://githubproxy.cc/
 
 - 安装并启动 `simadminhub.service`。
 - 安装独立的 `simadmin-host-agent.service`。
+- 安装独立的 `simadmin-device-service.service`；仅检测到本机平台蜂窝硬件时运行。
+- 安装最小权限的在线更新助手及 systemd Path Unit，用于处理后台提交的正式 Release 更新。
 - Host Agent 初始保持关闭，不启动进程，也不占用常驻运行资源。
 - 安装 Host Agent 状态控制单元，使其可以在 Hub“系统设置 > 概览”中启用或关闭。
 
@@ -89,7 +91,7 @@ curl -fsSL https://raw.githubusercontent.com/3899/SimAdminHub/main/install.sh | 
   --component host-agent --hub-url http://HUB地址:3001
 ```
 
-单独安装的 Host Agent 会直接启用并运行，由目标 Hub 管理；它不依赖同机安装 Hub。指定版本时增加 `--version 0.0.2`，版本号可以带或不带 `v`。
+单独安装的 Host Agent 会直接启用并运行，由目标 Hub 管理；它不依赖同机安装 Hub。安装器会同时部署同包的 `simadmin-device-service` 作为按需 WiFi Calling Worker，但不会安装或启动本机 Device Service 单元。指定版本时增加 `--version 0.0.3`，版本号可以带或不带 `v`。
 
 安装完成后检查：
 
@@ -155,7 +157,7 @@ docker run -d --name simadminhub --restart unless-stopped \
   ghcr.io/3899/simadminhub:latest
 ```
 
-Docker 镜像同时包含 Hub 和 Host Agent，但二者始终是独立进程。Host Agent 默认关闭且不会创建进程；需要管理当前 Docker 宿主机上的 USB/PCIe 蜂窝模组时，在“系统设置 > 概览”中打开“本机 Host Agent”即可，关闭后对应进程会停止。Host Agent 异常退出且开关仍开启时，容器入口会自动重新启动它。
+Docker 镜像同时包含 Hub、Host Agent 和 Device Service，三者始终是独立进程。Host Agent 默认关闭且不会创建进程；需要管理当前 Docker 宿主机上的 USB/PCIe 蜂窝模组时，在“系统设置 > 概览”中打开“本机 Host Agent”即可。Device Service 会在容器检测到本机平台蜂窝硬件时自动启动，否则不创建进程。异常退出的可用服务由容器入口按当前状态重新启动。
 
 标准 Docker 安装使用 Linux host 网络，使 Hub 直接加入宿主机网络栈并接收局域网 mDNS 组播，从而支持自动发现 SimAdmin 设备。host 网络没有端口映射，Hub 直接占用宿主机 TCP `3001`；安装前应确认该端口未被其他程序使用。该模式仅适用于 Linux Docker 主机，包括群晖 Container Manager，不适用于 Docker Desktop。
 
@@ -176,7 +178,7 @@ docker compose pull
 docker compose up -d
 ```
 
-升级前仍应在 Hub 中创建并下载备份。固定版本部署可把 `latest` 替换为发布标签，例如 `v0.0.2`。
+升级前仍应在 Hub 中创建并下载备份。固定版本部署可把 `latest` 替换为发布标签，例如 `v0.0.3`。
 
 ## 手动安装发布包
 
@@ -208,6 +210,10 @@ sudo bash install.sh --component host-agent --hub-url http://HUB地址:3001
 | Host Agent 程序 | `/usr/local/bin/simadmin-host-agent` |
 | Host Agent 配置 | `/etc/simadmin-host-agent/agent.env` |
 | Host Agent 数据 | `/var/lib/simadmin-host-agent`       |
+| Device Service 程序 | `/usr/local/bin/simadmin-device-service` |
+| Device Service 配置 | `/etc/simadminhub/device-service.env` |
+| Device Service 数据 | `/var/lib/simadminhub/device-service` |
+| 在线更新状态与暂存 | `/var/lib/simadminhub/updates` |
 
 ## 直接运行 Hub
 
@@ -222,7 +228,7 @@ SIMADMINHUB_BACKUP_DIR="$PWD/data/backups" \
 ./bin/simadminhub
 ```
 
-进程会随终端关闭而停止，数据保存在当前目录的 `data` 中。直接运行模式没有 systemd Host Agent 控制组件，设置页中的本机 Host Agent 开关不可用。
+进程会随终端关闭而停止，数据保存在当前目录的 `data` 中。直接运行单个 Hub 二进制不会自动启动 Host Agent 或 Device Service；需要验证本机完整设备时应使用正式归档安装，或分别启动包内三个二进制。
 
 ## 接入 SimAdmin 设备
 
@@ -249,13 +255,30 @@ Hub 无法访问设备、但设备可以访问 Hub 时，可以在 SimAdmin 集�
 
 ## 管理本机直连模组
 
+### 完整蜂窝设备本机安装 Hub
+
+正式安装会检测平台内置蜂窝硬件。检测成功后，Device Service 以“本机设备”身份自动接入 Hub，接入方式为“本机设备”，控制执行器为 SimAdmin Agent。它提供完整蜂窝设备能力，但数据、备份和升级均归 Hub 管理，因此设备面板不显示“备份与恢复”和“OTA”。
+
+平台内置 modem 不交给 Host Agent。开启 Host Agent 后，只有额外插入的 USB/PCIe/M.2 模组会作为其他设备出现，因此一台本机蜂窝设备可以同时拥有一台完整“本机设备”和多台额外直连模组。
+
+### 额外直连设备与普通模组
+
 默认完整安装已经安装 Host Agent，但不会启动它。需要管理与 Hub 同机连接的 USB/PCIe 蜂窝模组时，在“系统设置 > 概览”启用“本机 Host Agent”。关闭开关后，Hub 会停止并禁用 Host Agent 服务。
 
 Host Agent 始终是独立服务进程。开关只控制服务是否运行，不会把硬件探测或控制逻辑加载到 Hub 进程。
 
+正式发布包和 Docker 镜像不内置 `lpac`。检测到本机蜂窝硬件或首次启用 Host Agent 时，安装器复用 SimAdmin 的兼容选择逻辑，按架构、glibc 和兼容修订号在线安装到 `/opt/simadmin/lpac`；下载失败不会阻断 Hub 和基础短信/蜂窝能力。`libqmi-glib`、`libmbim-glib` 等依赖只保留一个真实文件，其余名称使用链接。Host Agent 只有在 eUICC 只读探测成功且对应 QMI、MBIM 或 AT APDU 驱动可用时，才显示 Profile 管理能力。
+
+WiFi Calling 同样按真实能力开放。Host Agent 会对明确的 QMI、MBIM 或 AT 控制端点执行只读 USIM 应用探测，成功后才在 SIM 卡页面显示功能开关。开启功能后才启动该设备的独立 Worker 并显示 WiFi Calling 页签；关闭功能、设备离线或控制端点失效后自动停止 Worker。多台设备各自使用独立状态、网络接口和短信存储，不会共用第一个 Modem。宿主机还必须具备可用的 WLAN/有线互联网、`/dev/net/tun` 和相应网络管理权限，运营商与套餐本身也必须支持 WiFi Calling。
+
 网络设备和宿主机直连模组的自动发现只在“添加设备”窗口打开期间运行。关闭窗口后，Hub 停止 mDNS 浏览并通知 Host Agent 停止新设备全量扫描；已绑定模组仍保留轻量在线检查，不影响状态和控制。浏览器异常退出时，发现会话会在短租约过期后自动停止。
 
-Host Agent 上报候选模组后，在 Hub“添加设备”中：
+Host Agent 上报候选设备后会先判断设备内部是否运行 SimAdmin：
+
+- 检测到 SimAdmin：显示“接入完整设备”，一次点击完成设备 Agent 接入、身份合并和控制权切换。Host Agent 只保留 USB 插拔观察，不读取 SIM、不消费短信，也不执行基带命令。
+- 未检测到 SimAdmin：显示“配置并添加”，由 Host Agent 根据实际控制端点生成动态能力。完整 Linux 设备和普通模组都不会因为名称或型号而强制显示不支持的功能。
+
+添加普通直连设备时：
 
 1. 选择需要管理的模组。
 2. 设置设备名称。
@@ -276,7 +299,7 @@ Host Agent 上报候选模组后，在 Hub“添加设备”中：
 | ModemManager | 正常运行的`ModemManager` 和 `mmcli`                   |
 | Network Only | 只上报网络能力，不提供短信和基带控制                      |
 
-发现窗口打开时，Host Agent 会优先使用 `/dev/serial/by-id` 稳定路径，执行 `mmcli -L` 全量枚举 ModemManager 对象，并以短超时发送只读 `AT`、`AT+CGSN` 或 `AT+GSN` 识别可用 AT 端口和 IMEI。探测不会发送改配置、拨号或重启命令。`udevadm` 用于热插拔唤醒；缺少时仍会在发现窗口打开期间周期刷新，但设备变化出现得更慢。使用 `auto` 时会根据 ModemManager、驱动和已验证控制端点选择后端，所需命令不存在会导致对应操作失败。可通过以下命令提前检查：
+发现窗口打开时，Host Agent 会优先使用 `/dev/serial/by-id` 稳定路径，执行 `mmcli -L` 全量枚举 ModemManager 对象，并以短超时发送只读 AT 查询识别 IMEI、SIM、短信、数据、APN、USSD、APDU 和温度能力。eSIM 只有在独立逻辑通道成功选择 eUICC 管理应用后才显示；仅支持普通 APDU 不等于支持 eSIM。探测不会切换 Profile、拨号、修改配置或重启基带。`udevadm` 用于热插拔唤醒；缺少时仍会在发现窗口打开期间周期刷新，但设备变化出现得更慢。使用 `auto` 时会根据 ModemManager、驱动和已验证控制端点选择后端；不支持的能力不会显示。可通过以下命令提前检查：
 
 ```bash
 command -v udevadm
@@ -372,7 +395,17 @@ curl -fsS http://127.0.0.1:3001/health
 
 ## 升级
 
-升级前先在“系统设置 > 备份与恢复”创建备份，并下载到其他存储位置。再次执行快速安装命令即可升级 Hub 和已安装的 Host Agent：
+### systemd 标准安装
+
+进入“系统设置 > 概览”，在“产品与版本”中检查更新。发现新版本后：
+
+1. 选择“下载并准备更新”，Hub 会按当前架构下载正式 Release，并校验 GitHub Asset 摘要、包内 `SHA256SUMS`、版本、架构和必需文件。
+2. 校验通过后选择“安装并重启”。Hub 会先创建完整数据库备份，再整体更新 Hub、已安装的 Host Agent、Device Service、前端和 systemd 单元。
+3. 页面会持续显示下载、校验、等待安装、安装、重启、成功、失败或已回滚状态。Hub 重启后状态不会丢失。
+
+安装和健康检查失败时会恢复更新前的整套组件。更新时异常断电，systemd 会在下次启动后继续处理尚未完成的正式更新包。仍建议定期把重要备份下载到其他存储位置。
+
+也可以再次执行快速安装命令完成升级：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/3899/SimAdminHub/main/install.sh | sh
@@ -380,7 +413,15 @@ curl -fsSL https://raw.githubusercontent.com/3899/SimAdminHub/main/install.sh | 
 
 安装器不会覆盖现有配置、数据库、备份、Host Agent 身份和绑定，也会保留本机 Host Agent 的启用状态。
 
-设置页“检查更新”只负责查询公开 Release，不会自动替换正在运行的程序。实际升级仍由上述安装命令完成。
+### Docker 与手动运行
+
+Docker 容器不会挂载 Docker Socket，也不会在容器内部替换镜像。发现新版本时，设置页会显示镜像名称和以下命令：
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+直接运行发布包中的二进制时，设置页只提供版本信息和 Release 入口，不会尝试提权或替换当前进程。请下载对应架构的正式归档，并按原部署方式完成替换与重启。
 
 ## 卸载
 
