@@ -35,7 +35,7 @@ SimAdminHub 是面向多台 [SimAdmin](https://github.com/3899/SimAdmin) 设备�
 
 SimAdmin 负责单台设备的独立运行与实际硬件控制；SimAdminHub 负责设备集合的统一管理。Hub 中所有业务数据按设备 ID 隔离，分组和标签只用于组织、筛选和规则范围，不引入项目、客户或租户模型。
 
-当前后端使用 Rust、Axum 与 SQLite，前端使用 React、Vite 与 Material UI。正式发布提供 `x86_64`、`aarch64` Linux 安装包和多架构容器镜像。
+当前后端使用 Rust、Axum 与 SQLite，前端使用 React、Vite 与 Material UI。正式发布提供 `x86_64`、`aarch64`、`armv7` Linux 安装包和多架构容器镜像。
 
 > **使用前请先将所有子设备升级到最新版 SimAdmin。** SimAdminHub 依赖新版 SimAdmin 内置的 Hub Agent、接入接口和通信协议；旧版 SimAdmin 即使单设备后台工作正常，也无法完成 Hub 接入，常见表现是“请求的接口不存在”、自动发现后无法连接等。
 
@@ -49,7 +49,7 @@ SimAdmin 负责单台设备的独立运行与实际硬件控制；SimAdminHub �
 | 短信中心     | 首次接入全量同步设备历史短信，后续增量同步；支持按设备和会话查看、跨设备搜索、发送短信、会话选择和批量删除。                                                                  |
 | 通知中心     | 集中配置 Webhook、Bark、PushPlus、企业微信、钉钉、飞书、Telegram、Email、Server酱等通道，以及转发规则、设备范围、日志和失败重试。                                             |
 | 自动化中心   | 按全部设备、多个分组或指定设备执行重启基带、重启设备和发送短信任务，并记录每台设备的执行结果。                                                                                |
-| 本机设备     | Hub 安装在完整 Linux 蜂窝设备上时，自动启动仅监听回环地址的 Device Service，以 `local_system + simadmin_agent` 提供蜂窝设备能力；普通服务器上不启动该进程。                       |
+| 本机设备     | Hub 安装在完整 Linux 蜂窝设备上时，自动启动仅监听回环地址的 Device Service，以 `local_system + simadmin_agent` 提供蜂窝设备能力；若同机已有 SimAdmin，则优先复用现有 SimAdmin 并保持 Device Service 停止。 |
 | Host Agent   | 发现已安装 SimAdmin 的 USB 完整设备时交由设备内 Agent 接管；其他完整设备或普通模组按实际探测开放 Direct AT、ModemManager、QMI、MBIM、SIM、短信、数据、eSIM 识别与 Profile 生命周期、绑定网卡等能力。 |
 | 数据管理     | 提供组件存储统计、手动清理、自动保留策略、数据库整理、组件化备份、定时备份、预览和恢复。                                                                                      |
 | 运行与发布   | 支持心跳和离线判定、Agent WebSocket 重连、命令账本、失败恢复、systemd 在线更新与回滚，以及 Docker 部署。                                                                      |
@@ -96,13 +96,13 @@ SimAdmin 负责单台设备的独立运行与实际硬件控制；SimAdminHub �
 
 ### systemd
 
-支持带 systemd 的 `x86_64` 或 `aarch64` Linux 主机：
+支持带 systemd 的 `x86_64`、`aarch64` 或 `armv7` Linux 主机：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/3899/SimAdminHub/main/install.sh | sh
 ```
 
-默认安装 Hub、独立 Host Agent 和本机 Device Service。Host Agent 初始关闭且不会启动进程；Device Service 只在检测到本机平台蜂窝硬件时启动。需要管理额外直连模组时，再在“系统设置 > 概览”中启用 Host Agent。
+默认安装 Hub、独立 Host Agent 和本机 Device Service。Host Agent 初始关闭且不会启动进程；Device Service 只在检测到本机平台蜂窝硬件且同机没有运行 SimAdmin 时启动。需要管理额外直连模组时，再在“系统设置 > 概览”中启用 Host Agent。
 
 国内网络可使用加速入口：
 

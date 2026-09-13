@@ -106,6 +106,7 @@ done
 case "$(uname -m)" in
   x86_64) ARCH=x86_64 ;;
   aarch64|arm64) ARCH=aarch64 ;;
+  armv7l|armv7|armhf) ARCH=armv7 ;;
   *) echo "Unsupported host architecture: $(uname -m)" >&2; exit 1 ;;
 esac
 

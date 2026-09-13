@@ -8,16 +8,17 @@
 
 Hub 可以部署在独立 Linux 服务器、软路由、NAS、虚拟机，或其中一台 SimAdmin 设备所在的 Linux 主机。主机需要持续运行，并能与被管理设备互通。
 
-Hub 可以直接安装在 UFI003 等完整 Linux 蜂窝设备本机。发布包内置独立 Device Service，检测到本机平台蜂窝硬件后自动通过回环地址接入 Hub，并提供完整 SimAdmin 能力；普通服务器上该服务保持沉寂。若同机仍单独运行完整 SimAdmin Web 服务，SimAdmin 使用 `3000`、Hub 使用 `3001`，二者不能共用数据目录。
+Hub 可以直接安装在 UFI003 等完整 Linux 蜂窝设备本机。发布包内置独立 Device Service，检测到本机平台蜂窝硬件后自动通过回环地址接入 Hub，并提供完整 SimAdmin 能力；普通服务器上该服务保持沉寂。若同机已经安装或运行 SimAdmin，安装器会保持 Device Service 停止并优先复用现有 SimAdmin，避免两个服务争用 ModemManager、QMI 或 APDU；SimAdmin 使用 `3000`、Hub 使用 `3001`，两者继续使用各自的数据目录。现有 SimAdmin 在 Hub 中按完整 SimAdmin 和网络接入语义管理，继续保留设备自己的备份与 OTA。现有 SimAdmin 仍处于单设备模式时，需要先明确切换到集中管理模式，Hub 不会静默修改其工作模式。
 
 ### 支持架构与发布包
 
-公开 Release 只提供两个固定名称的归档：
+公开 Release 提供三个固定名称的归档：
 
-| 主机架构                 | 发布包                         |
-| ------------------------ | ------------------------------ |
-| `x86_64`/ `amd64`    | `simadminhub-x86_64.tar.gz`  |
-| `aarch64` / `arm64` | `simadminhub-aarch64.tar.gz` |
+| 主机架构                      | 发布包                         |
+| ----------------------------- | ------------------------------ |
+| `x86_64` / `amd64`            | `simadminhub-x86_64.tar.gz`    |
+| `aarch64` / `arm64`           | `simadminhub-aarch64.tar.gz`   |
+| `armv7` / `armv7l` / `armhf`  | `simadminhub-armv7.tar.gz`     |
 
 主机与浏览器要求
 
@@ -91,7 +92,7 @@ curl -fsSL https://raw.githubusercontent.com/3899/SimAdminHub/main/install.sh | 
   --component host-agent --hub-url http://HUB地址:3001
 ```
 
-单独安装的 Host Agent 会直接启用并运行，由目标 Hub 管理；它不依赖同机安装 Hub。安装器会同时部署同包的 `simadmin-device-service` 作为按需 WiFi Calling Worker，但不会安装或启动本机 Device Service 单元。指定版本时增加 `--version 0.0.3`，版本号可以带或不带 `v`。
+单独安装的 Host Agent 会直接启用并运行，由目标 Hub 管理；它不依赖同机安装 Hub。安装器会同时部署同包的 `simadmin-device-service` 作为按需 WiFi Calling Worker，但不会安装或启动本机 Device Service 单元。指定版本时增加 `--version 0.0.4`，版本号可以带或不带 `v`。
 
 安装完成后检查：
 
@@ -178,7 +179,7 @@ docker compose pull
 docker compose up -d
 ```
 
-升级前仍应在 Hub 中创建并下载备份。固定版本部署可把 `latest` 替换为发布标签，例如 `v0.0.3`。
+升级前仍应在 Hub 中创建并下载备份。固定版本部署可把 `latest` 替换为发布标签，例如 `v0.0.4`。
 
 ## 手动安装发布包
 
@@ -190,7 +191,7 @@ cd simadminhub-x86_64
 sudo bash install.sh
 ```
 
-`aarch64` 主机将上述文件名和目录名替换为 `simadminhub-aarch64`。`install.sh` 默认安装两项服务；也支持：
+`aarch64` 或 `armv7` 主机将上述文件名和目录名替换为 `simadminhub-aarch64` 或 `simadminhub-armv7`。`install.sh` 默认安装两项服务；也支持：
 
 ```bash
 sudo bash install.sh --component hub
@@ -257,7 +258,7 @@ Hub 无法访问设备、但设备可以访问 Hub 时，可以在 SimAdmin 集�
 
 ### 完整蜂窝设备本机安装 Hub
 
-正式安装会检测平台内置蜂窝硬件。检测成功后，Device Service 以“本机设备”身份自动接入 Hub，接入方式为“本机设备”，控制执行器为 SimAdmin Agent。它提供完整蜂窝设备能力，但数据、备份和升级均归 Hub 管理，因此设备面板不显示“备份与恢复”和“OTA”。
+正式安装会检测平台内置蜂窝硬件。检测成功且同机没有现有 SimAdmin 时，Device Service 以“本机设备”身份自动接入 Hub，接入方式为“本机设备”，控制执行器为 SimAdmin Agent。它提供完整蜂窝设备能力，但数据、备份和升级均归 Hub 管理，因此设备面板不显示“备份与恢复”和“OTA”。检测到现有 SimAdmin 时不会再启动 Device Service；现有 SimAdmin 作为完整 SimAdmin 设备接入并保留自己的备份与升级能力。
 
 平台内置 modem 不交给 Host Agent。开启 Host Agent 后，只有额外插入的 USB/PCIe/M.2 模组会作为其他设备出现，因此一台本机蜂窝设备可以同时拥有一台完整“本机设备”和多台额外直连模组。
 
