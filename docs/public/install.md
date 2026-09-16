@@ -92,7 +92,7 @@ curl -fsSL https://raw.githubusercontent.com/3899/SimAdminHub/main/install.sh | 
   --component host-agent --hub-url http://HUB地址:3001
 ```
 
-单独安装的 Host Agent 会直接启用并运行，由目标 Hub 管理；它不依赖同机安装 Hub。安装器会同时部署同包的 `simadmin-device-service` 作为按需 WiFi Calling Worker，但不会安装或启动本机 Device Service 单元。指定版本时增加 `--version 0.0.4`，版本号可以带或不带 `v`。
+单独安装的 Host Agent 会直接启用并运行，由目标 Hub 管理；它不依赖同机安装 Hub。安装器会同时部署同包的 `simadmin-device-service` 作为按需 WiFi Calling Worker，但不会安装或启动本机 Device Service 单元。指定版本时增加 `--version 0.0.5`，版本号可以带或不带 `v`。
 
 安装完成后检查：
 
@@ -179,7 +179,7 @@ docker compose pull
 docker compose up -d
 ```
 
-升级前仍应在 Hub 中创建并下载备份。固定版本部署可把 `latest` 替换为发布标签，例如 `v0.0.4`。
+升级前仍应在 Hub 中创建并下载备份。固定版本部署可把 `latest` 替换为发布标签，例如 `v0.0.5`。
 
 ## 手动安装发布包
 
