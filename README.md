@@ -65,13 +65,14 @@ SimAdmin 负责单台设备的独立运行与实际硬件控制；SimAdminHub �
 
 ## 社区交流
 
-群聊用于日常讨论、技术交流和经验分享。问题反馈与功能建议请提交 [Issues](https://github.com/3899/SimAdminHub/issues)。
+⚠️ 温馨提示：群聊用于日常讨论、技术交流和经验分享。问题反馈与功能建议请提交 [Issues](https://github.com/3899/SimAdminHub/issues)。
 
 <table>
   <thead>
     <tr>
-      <th width="48%">QQ 群</th>
-      <th width="48%">Telegram 群组</th>
+      <th width="33%">QQ 群</th>
+      <th width="33%">微信群</th>
+      <th width="33%">TG 群组</th>
     </tr>
   </thead>
   <tbody>
@@ -80,17 +81,55 @@ SimAdmin 负责单台设备的独立运行与实际硬件控制；SimAdminHub �
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="./static/Community/QQGroup_Dark.png" />
           <source media="(prefers-color-scheme: light)" srcset="./static/Community/QQGroup_Light.png" />
-          <img src="./static/Community/QQGroup_Light.png" alt="QQ 群" />
+          <img src="./static/Community/QQGroup_Light.png" />
         </picture>
       </td>
       <td>
         <picture>
-          <img src="./static/Community/TG_Chat.png" alt="Telegram 群组" />
+          <img src="./static/Community/WeChat.png" />
+        </picture>
+      </td>
+      <td>
+        <picture>
+          <img src="./static/Community/TG_Chat.png" />
         </picture>
       </td>
     </tr>
   </tbody>
 </table>
+
+## ☕ 支持与赞助
+
+`SimAdminHub` 是一款由爱好者利用业余时间持续开发与维护的嵌入式 SIM/eSIM 设备集中管理中枢。
+
+如果您觉得这个项目对您有帮助，欢迎请作者喝杯咖啡，您的支持将帮助我们更好地维护和发展项目，让 `SimAdminHub` 持续为社区创造价值。
+
+<table>
+  <thead>
+    <tr>
+      <th width="50%" align="center">微信赞助</th>
+      <th width="50%" align="center">支付宝赞助</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center">
+        <img src="./static/Sponsor/wechat.png" width="200" alt="微信赞助" />
+      </td>
+      <td align="center">
+        <img src="./static/Sponsor/alipay.png" width="200" alt="支付宝赞助" />
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+#### 💖 赞助与致谢榜
+
+| 赞助者 | 日期 | 留言 |
+| :--- | :---: | :--- |
+| 余枫 | 2026-10-13 | — |
+
+> 💡 赞助时欢迎备注您的 GitHub ID 或昵称，赞助名单将同步收录于项目文档与致谢榜中。
 
 ## 快速安装
 
